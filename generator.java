@@ -1,8 +1,7 @@
-package twochoicegame;
+package dtwvariant;
 import java.util.*;
 
 public class generator {
-    ArrayList<Integer> hits = new ArrayList<Integer>();
     // template3 refers to a collection of all pattern templates available at the current turnnumber
     // template3[k] refers to the group of pattern templates with a pattern length of k + 2
     ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<ArrayList<ArrayList<Integer>>>();
@@ -17,26 +16,26 @@ public class generator {
 
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
-    public int max_seq_len(int turnnumber){
+    public int max_seq_len(int turnnumber){ // Time Complexity: O(1)
         int x = 11;
         for (int i = 2; i < 11; i++) {
             float quotient = turnnumber / i;
             if (quotient < 3) {
                 x = i;
             }
-            }
-        return x;
         }
+        return x;
+    }
 
-    public void generate_templates() {
+    public void generate_templates() { // Time Complexity: O()
         for (int j = 2; j <= max_seq_len(turnnumber); j++){
             template1.clear();
             int templen = 1;
             subiteration(j, templen);
             template3.add(template2);
             template2.clear();
-            }
         }
+    }
 
     public void subiteration(int seq_len, int templen) {
         for (int a = 1; a <= 2; a++) {
@@ -53,77 +52,103 @@ public class generator {
             }
             templen++;
             subiteration(seq_len, templen);
-            }
         }
-
-    public int get_hits(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
-        String past_player_choices_string = past_player_choices.toString();
-        String template_to_match_string = template_to_match.toString();
-        int number_of_hits = 0, last_known_idx = -2;
-        for (int idx = 0; idx < past_player_choices_string.length(); idx++) {
-            if ((last_known_idx != past_player_choices_string.indexOf(template_to_match_string, idx)) && (last_known_idx != -1)) {
-                number_of_hits++;
-                last_known_idx = past_player_choices_string.indexOf(template_to_match_string, idx);
-            }
-        }
-        return number_of_hits;
     }
 
-    public HashMap<Integer, Float> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
-        String past_player_choices_string = past_player_choices.toString();
-        String template_to_match_string = template_to_match.toString();
-        float number_of_hits = 0;
-        int last_known_idx = -2;
-        ArrayList<Integer> variance_list = new ArrayList<Integer>();
-        HashMap<Integer, Float> map = new HashMap<Integer, Float>();
-        for (int idx = 0; idx < past_player_choices_string.length(); idx++) {
-            boolean check = ((past_player_choices_string.indexOf(template_to_match_string, idx) >= last_known_idx) && (past_player_choices_string.indexOf(template_to_match_string, idx) != -1));
-            if (check) {
-                last_known_idx = past_player_choices_string.indexOf(template_to_match_string, idx);
-                number_of_hits++;
-                variance_list.add(past_player_choices_string.indexOf(template_to_match_string, idx) + template_to_match_string.length() - last_known_idx);
+    public double get_dissimilarity(String warped_string, String actual_string) {
+        int differences = 0;
+        for (int i = 0; i <= actual_string.length(); i++) {
+            if (warped_string.charAt(i) == actual_string.charAt(i)) {
+                differences++;
             }
         }
-        float variance = get_array_variance(variance_list);
-        map.put(0, number_of_hits);
-        map.put(1, variance);
-        return map;
+        double dissimilarity = differences / actual_string.length();
+        return dissimilarity;
     }
 
-    public float get_array_variance(ArrayList<Integer> array) {
-        float dev_from_avg = 0, sum_of_elements = 0, mean = (sum_of_elements) / array.size();
-        for (int i = 0; i < array.size(); i++) {
-            sum_of_elements += array.get(i);
-        }
-        for (int i = 0; i < array.size(); i++) {
-            dev_from_avg += Math.pow((array.get(i) - mean), 2);
-        }
-        return (dev_from_avg / (array.size() - 1));
-    }
-
-    public ArrayList<Integer> generate_best_template(ArrayList<Integer> past_player_choices) {
+    public String generate_top_template() {
         generate_templates();
-        float best_rating = 0 + (1 / Integer.MAX_VALUE);
-        ArrayList<Integer> best_template = new ArrayList<Integer>();
-        for (int b = 0; b < template3.size(); b++){
-            for (int c = 0; c < (template3.get(b)).size(); c++){
-                ArrayList<Integer> template_to_match = template3.get(b).get(c);
-                float hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
-                float lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
-                float rating = hits + (1 / lag_variance);
-                if (best_rating < rating) {
-                    best_rating = rating;
-                    best_template = template_to_match;
-                }
+        ArrayList<String> templates = new ArrayList<String>();
+        ArrayList<Double> dissimilarities = new ArrayList<Double>();
+        ArrayList<Double> distances = new ArrayList<Double>();
+        String warped_string = "";
+        double distance_counter = 0;
+        int[] current_position = new int[];
+        for (int b = 0; b < template3.size(); b++) {
+            for (int c = 0; c < (template3.get(b)).size(); c++) {
+                String template_to_match = template3.get(b).get(c).toString();
+                update_t_d_d(current_position, warped_string, distance_counter, template_to_match, past_player_choices.toString(), templates, dissimilarities, distances);
+            }
+        }
+        String best_template = "";
+        double highest_rating = 1/Integer.MAX_VALUE;
+        for (int i = 0; i <= templates.size() - 1; i++) {
+            double current_rating = 1 / (distances.get(i) + dissimilarities.get(i));
+            if (current_rating > highest_rating) {
+                highest_rating = current_rating;
+                best_template = templates.get(i);
             }
         }
         return best_template;
     }
 
-    // Possible improvements to generate_best_template(): use variance of lags between pattern occurrences as criteria
+    public void update_t_d_d(int[] current_position, String warped_string, double distance_counter, String template, String sample, ArrayList<String> templates, ArrayList<Double> dissimilarities, ArrayList<Double> distances) {
+        if ((current_position[0] == sample.length()) && (current_position[1] == template.length())) {
+            templates.add(template);
+            dissimilarities.add(get_dissimilarity(warped_string, sample));
+            distances.add(distance_counter);
+        }
+        else {
+            if (current_position[0] == sample.length() - 1) {
+                distance_counter += template.length() - 1 - current_position[1];
+                current_position[1] = template.length() - 1;
+                update_t_d_d(current_position, warped_string, distance_counter, template, sample, templates, dissimilarities, distances);
+            }
+            if (current_position[1] == template.length() - 1) {
+                distance_counter += sample.length() - 1 - current_position[0];
+                for (int i = current_position[0] + 1; i <= sample.length() - 1; i++) {
+                    warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1])));
+                }
+                current_position[0] = sample.length() - 1;
+                update_t_d_d(current_position, warped_string, distance_counter, template, sample, templates, dissimilarities, distances);
+            }
+            else {
+                int potential_paths = 0;
+                for (int i = current_position[0]; i <= sample.length() - 1; i++) {
+                    if (sample.charAt(i) == template.charAt(current_position[1] + 1)) {
+                        distance_counter += Math.sqrt(Math.pow(i -current_position[0], 2) + Math.pow(1, 2)); //needtocheck
+                        if (i == current_position[0]) {
+                            try {
+                                warped_string = warped_string.substring(0, warped_string.length() - 2) + String.format("%x", template.charAt(current_position[1] + 1));
+                            } catch (Exception StringIndexOutOfBounds) {
+                                warped_string = String.format("%x", template.charAt(current_position[1] + 1));
+                            }
+                        }
+                        else {
+                            for (int a = current_position[0] + 1; a < i; a++) {
+                                warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1])));
+                            }
+                            warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1] + 1)));
+                        }
+                        current_position[0] = i;
+                        current_position[1]++;
+                        potential_paths++;
+                        update_t_d_d(current_position, warped_string, distance_counter, template, sample, templates, dissimilarities, distances);
+                    }
+                }
+                if (potential_paths == 0) {
+                    distance_counter += Math.sqrt(2);
+                    warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1] + 1)));
+                    current_position[0]++;
+                    current_position[1]++;
+                    update_t_d_d(current_position, warped_string, distance_counter, template, sample, templates, dissimilarities, distances);
+                }
+            }
+        }
+    }
 
     public int generate_ai_choice() {
-        String pattern = generate_best_template(past_player_choices).toString();
+        String pattern = generate_top_template();
         String last_few_choices = (past_player_choices.toString()).substring(((past_player_choices.toString()).length() - pattern.length()),
                 ((past_player_choices.toString()).length()));
         int choice = 0;
@@ -131,12 +156,12 @@ public class generator {
         for (int k = 2; k < pattern.length(); k++) {
             String temp = last_few_choices.substring(last_few_choices.length() - k, last_few_choices.length());
             if ((pattern.indexOf(temp)) == 0) {
-                choice = generate_best_template(past_player_choices).get(temp.length());
+                choice = generate_top_template().charAt(temp.length());
             }
         }
         //if player is not currently engaged in a pattern, assume that the pattern begins this turn.
         if (choice == 0) {
-            choice = generate_best_template(past_player_choices).get(0);
+            choice = generate_top_template().charAt(0);
         }
         return choice;
     }
