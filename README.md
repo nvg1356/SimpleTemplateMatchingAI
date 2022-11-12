@@ -23,4 +23,4 @@ resulting in a high computational cost and a high time complexity of .
 
 ## Potential Updates
 In the future, I may decide to implement a more advanced algorithm. One that I currently have in mind is dynamic time warping. Details of this
-algorithm can be found in a paper called "Using Dynamic Time Warping to Find Patterns in Time Series" by Donald J. Berndt and James Clifford. 
+algorithm can be found in a paper called "Using Dynamic Time Warping to Find Patterns in Time Series" by Donald J. Berndt and James Clifford. **CAN BE FOUND IN dtwvariant branch**
