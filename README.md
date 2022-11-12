@@ -17,7 +17,7 @@ Before the algorithm starts, it knows about the moves of the player in turns whi
 In the cognitive sciences, template matching is a eminent theory that describes how one identify patterns. The theory is as follows: when one
 looks at a sequence, the sequence is compared against every pattern that one can think of. A better explanation can be found [here](https://cdn.intechopen.com/pdfs/5795/InTech-Theory_of_cognitive_pattern_recognition.pdf). Furthermore, template matching is used in other machine 
 pattern recognition fields such as signal processing. A paper which expounds on this concept can be found [here](https://www.hindawi.com/journals/jam/2014/528071/).
-## Reason for usage of evolutionary algorithm as a metaheuristic
+### Reason for usage of evolutionary algorithm as a metaheuristic
 I had previously used a template-matching algorithm by itself and it involved the generation and evaluation of all possible patterns without discrimination. The high computational cost and long processing times motivated me utilise a method that reduced the number of tested patterns while maintaining effectiveness of the algorithm.
 ### Limitations of algorithm
 Success of the algorithm hinges on there being patterns to the player's moves.
