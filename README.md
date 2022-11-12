@@ -18,7 +18,7 @@ looks at a sequence, the sequence is compared against every pattern that one can
 pattern recognition fields such as signal processing. A paper which expounds on this concept can be found [here](https://www.hindawi.com/journals/jam/2014/528071/).
 ### Limitations of algorithm
 Success of the algorithm hinges on there being patterns to the player's moves. The algorithm is undeniably a brute force approach,
-resulting in a high computational cost and a high time complexity of . 
+resulting in a high computational cost. 
 
 
 ## Potential Updates
