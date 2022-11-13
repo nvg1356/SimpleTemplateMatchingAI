@@ -12,11 +12,12 @@ public class generator {
     // template1 refers to an ordinary pattern template
     ArrayList<Integer> template1 = new ArrayList<Integer>();
     base object = new base();
+    int mutation_limit = object.mutation_limit;
     ArrayList<Integer> past_player_choices = object.past_player_choices;
     int turnnumber = object.turnnumber;
     ArrayList<Integer> pattern_lags = new ArrayList<Integer>();
     ArrayList<Integer> best_template = new ArrayList<Integer>();
-
+    SecureRandom random = new SecureRandom();
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
     public int max_seq_len(int turnnumber){ // Time Complexity: O(1)
@@ -60,7 +61,6 @@ public class generator {
 
     public ArrayList<ArrayList<Integer>> get_initial_population(int number_of_samples) {
         ArrayList<ArrayList<Integer>> initial_population = new ArrayList<ArrayList<Integer>>();
-        SecureRandom random = new SecureRandom();
         ArrayList<Integer> samples_for_each_patt_length = new ArrayList<Integer>();
         for (int i = 0; i < template3.size(); i++) {
             float x = number_of_samples / template3.size();
@@ -69,16 +69,14 @@ public class generator {
             }
             samples_for_each_patt_length.add(Math.round(x));
         }
-        for (ArrayList<ArrayList<Integer>> arrayLists : template3) {
-            int i = 0;
-            if (samples_for_each_patt_length.get(i) > arrayLists.size()) {
-                samples_for_each_patt_length.set(i + 1, samples_for_each_patt_length.get(i + 1) + samples_for_each_patt_length.get(i) - arrayLists.size());
-                samples_for_each_patt_length.set(i + 1, arrayLists.size());
+        for (int i = 0; i < template3.size(); i++) {
+            if (samples_for_each_patt_length.get(i) > template3.get(i).size()) {
+                samples_for_each_patt_length.set(i + 1, samples_for_each_patt_length.get(i + 1) + samples_for_each_patt_length.get(i) - template3.get(i).size());
+                samples_for_each_patt_length.set(i , template3.get(i).size());
             }
             for (int k = 0; k < samples_for_each_patt_length.get(i); k++) {
-                initial_population.add(arrayLists.get(random.nextInt(0, arrayLists.size())));
+                initial_population.add(template3.get(i).get(random.nextInt(0, template3.get(i).size())));
             }
-            i++;
         }
         return initial_population;
     }
@@ -115,43 +113,71 @@ public class generator {
         return (dev_from_avg / (array.size() - 1));
     }
 
-    public void generate_best_template(ArrayList<Integer> past_player_choices, int initial_pop_size) {
+    public void generate_best_template(int initial_pop_size) {
         generate_all_templates();
         ArrayList<ArrayList<Integer>> initial_population = get_initial_population(initial_pop_size);
-        sub_generation(initial_population);
+        int current_mutation = 0;
+        sub_generation(initial_population, current_mutation);
     }
 
-    public void sub_generation(ArrayList<ArrayList<Integer>> initial_population) {
-        if (initial_population.size() == 1) {
-            best_template = initial_population.get(0);
+    public void sub_generation(ArrayList<ArrayList<Integer>> initial_population, int current_mutation) {
+
+        ArrayList<ArrayList<Integer>> templates_for_mutation = new ArrayList<>();
+        ArrayList<Float> ratings_array = new ArrayList<>();
+        for (ArrayList<Integer> template_to_match : initial_population){
+            float hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
+            float lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
+            float rating = hits + (1 / lag_variance);
+            ratings_array.add(rating);
+        }
+        if (current_mutation == mutation_limit) {
+            float best_rating = 0;
+            for (float element: ratings_array) {
+                if (best_rating < element) {
+                    best_rating = element;
+                }
+            }
+            best_template = initial_population.get(ratings_array.indexOf(best_rating));
         }
         else {
-            ArrayList<ArrayList<Integer>> templates_for_mutation = new ArrayList<ArrayList<Integer>>();
-            ArrayList<Float> ratings_array = new ArrayList<Float>();
-            for (ArrayList<Integer> template_to_match : initial_population){
-                float hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
-                float lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
-                float rating = hits + (1 / lag_variance);
-                ratings_array.add(rating);
-            }
             //criteria to get top 20% of initial_population into templates_for_mutation
-            get_mutated_population(templates_for_mutation);
+            for (int i = 0; i < Math.round(initial_population.size() * 0.4); i++) {
+                float max = ratings_array.get(0);
+                for (float element: ratings_array) {
+                    if (element > max) {
+                        max = element;
+                    }
+                }
+                templates_for_mutation.add(initial_population.get(ratings_array.indexOf(max)));
+                initial_population.remove(ratings_array.indexOf(max));
+                ratings_array.remove(max);
+            }
+            get_mutated_population(templates_for_mutation, current_mutation);
         }
     }
 
-    public void get_mutated_population (ArrayList<ArrayList<Integer>> templates_for_mutation) {
-        //some algorithm to generate mutated population
-        sub_generation(mutated_population);
+    public void get_mutated_population (ArrayList<ArrayList<Integer>> templates_for_mutation, int current_mutation) { //Reverse Sequence Mutation
+        ArrayList<ArrayList<Integer>> mutated_population = new ArrayList<>();
+        for (ArrayList<Integer> template: templates_for_mutation) {
+            mutated_population.add(template);
+            ArrayList<Integer> mutant = template;
+            int inv_start = random.nextInt(1, (int) Math.round(mutant.size() * 0.5 - 0.5));
+            for (int i = inv_start; i < (mutant.size() - inv_start); i++) {
+                mutant.set(i, mutant.get(mutant.size() - inv_start - i));
+            }
+            mutated_population.add(mutant);
+        }
+        current_mutation++;
+        sub_generation(mutated_population, current_mutation);
     }
 
-    public int generate_ai_choice(int initial_pop_size) { //needs cleaning
+    public int generate_ai_choice() { //needs cleaning
         String pattern = best_template.toString();
-        String last_few_choices = (past_player_choices.toString()).substring(((past_player_choices.toString()).length() - pattern.length()),
-                ((past_player_choices.toString()).length()));
+        String last_few_choices = (past_player_choices.toString()).substring(past_player_choices.toString().length() - pattern.length());
         int choice = 0;
         // if player is currently engaged in a pattern, assume that player will continue with the pattern this turn
         for (int k = 2; k < best_template.size(); k++) {
-            String temp = last_few_choices.substring(last_few_choices.length() - k, last_few_choices.length());
+            String temp = last_few_choices.substring(last_few_choices.length() - k);
             if ((pattern.indexOf(temp)) == 0) {
                 choice = best_template.get(temp.length());
             }
