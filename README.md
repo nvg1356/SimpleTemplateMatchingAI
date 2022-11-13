@@ -1,5 +1,5 @@
 # SimpleTemplateMatchingAI
-Simple 2-by-2 matrix game without perfect information involving a template-matching algorithm along with a metaheuristic evolutionary algorithm.
+Simple 2-by-2 matrix game without perfect information involving a template-matching algorithm along with a metaheuristic evolutionary algorithm. **STILL IN PROGRESS**
 
 ## Details
 ### Instructions
