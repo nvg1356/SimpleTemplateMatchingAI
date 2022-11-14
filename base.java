@@ -1,4 +1,7 @@
-package geneticreg;
+package geneticdtw;
+
+import geneticdtw.generator;
+
 import java.security.SecureRandom;
 import java.util.*;
 
@@ -7,7 +10,7 @@ public class base {
     ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
     int player_wins = 0;
     int ai_wins = 0;
-    generator predictor = new generator();
+    geneticdtw.generator predictor = new generator();
     int turnnumber = 0;
     int accumulated_ai_losses = 0;
     int mutation_limit = 0;
