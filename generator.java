@@ -1,16 +1,17 @@
-package twochoicegame;
-import java.util.*;
+package threadedregvariant;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import static java.lang.Thread.State.TERMINATED;
 
 public class generator {
-    // template3 refers to a collection of all pattern templates available at the current turnnumber
-    // template3[k] refers to the group of pattern templates with a pattern length of k + 2
-    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<>();
-    // template2 refers to a group of pattern templates for a particular pattern length
-    ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
+    // template2 refers to all pattern templates
+    static ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     // template1 refers to an ordinary pattern template
     ArrayList<Integer> template1 = new ArrayList<>();
     base object = new base();
-    ArrayList<Integer> past_player_choices = object.past_player_choices;
+    public ArrayList<Integer> past_player_choices = object.past_player_choices;
     final int turnnumber = object.turnnumber;
 
     //Assumptions are that patterns lasting more than ten moves are impossible,
@@ -31,8 +32,6 @@ public class generator {
             template1.clear();
             int templen = 1;
             subiteration(j, templen);
-            template3.add(template2);
-            template2.clear();
             }
         }
 
@@ -105,21 +104,40 @@ public class generator {
 
     public ArrayList<Integer> generate_best_template(ArrayList<Integer> past_player_choices) {
         generate_templates();
-        double best_rating = 0;
-        ArrayList<Integer> best_template = new ArrayList<>();
-        for (int b = 0; b < template3.size(); b++){
-            for (int c = 0; c < (template3.get(b)).size(); c++){
-                ArrayList<Integer> template_to_match = template3.get(b).get(c);
-                double hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
-                double lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
-                double rating = hits + (1 / lag_variance);
-                if (best_rating < rating) {
-                    best_rating = rating;
-                    best_template = template_to_match;
-                }
+
+        HashMap<Double, ArrayList<Integer>> template_ratings_collection = new HashMap<>();
+        //4-threads
+        MultiThreading t1 = new MultiThreading();
+        MultiThreading t2 = new MultiThreading();
+        MultiThreading t3 = new MultiThreading();
+        MultiThreading t4 = new MultiThreading();
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
+        while (template2.size() > 0) {
+            if (t1.getState() == TERMINATED) {
+                t1.run();
+            }
+            if (t2.getState() == TERMINATED) {
+                t2.run();
+            }
+            if (t3.getState() == TERMINATED) {
+                t3.run();
+            }
+            if (t4.getState() == TERMINATED) {
+                t4.run();
             }
         }
-        return best_template;
+        ArrayList<Double> ratings_array = new ArrayList<>();
+        template_ratings_collection.keySet().forEach((n) -> ratings_array.add(n));
+        double best_rating = 0;
+        for (double rating: ratings_array) {
+            if (rating > best_rating) {
+                best_rating = rating;
+            }
+        }
+        return template_ratings_collection.get(best_rating);
     }
 
     public int generate_ai_choice() {

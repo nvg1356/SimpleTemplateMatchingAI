@@ -1,14 +1,16 @@
-package twochoicegame;
+package threadedregvariant;
+
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class base {
     final int[] possible_choices = {1, 0};
-    ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
+    public ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
     int player_wins = 0;
     int ai_wins = 0;
     generator predictor = new generator();
-    int turnnumber = 0;
+    public int turnnumber = 0;
     int accumulated_ai_losses = 0;
     SecureRandom random = new SecureRandom();
 
