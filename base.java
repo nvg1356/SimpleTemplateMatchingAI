@@ -4,13 +4,12 @@ import java.util.*;
 
 public class base {
     final int[] possible_choices = {1, 0};
-    ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
+    ArrayList<Integer> past_player_choices = new ArrayList<>();
     int player_wins = 0;
     int ai_wins = 0;
     generator predictor = new generator();
     int turnnumber = 0;
     int accumulated_ai_losses = 0;
-    int mutation_limit = 0;
     SecureRandom random = new SecureRandom();
     Scanner myObj = new Scanner(System.in);
 
@@ -47,16 +46,17 @@ public class base {
         return initial_pop_size;
     }
 
-    public void get_mutation_limit() {
+    public int get_mutation_limit() {
         System.out.println("Please enter the desired number of rounds of mutation (integers only) for the EA.");
         int mutation_limit = myObj.nextInt();
+        return mutation_limit;
     }
 
     // turn 1 is used for first ten turns
-    public void turn(int player_choice, boolean restrat, int initial_pop_size){
+    public void turn(int player_choice, boolean restrat, int initial_pop_size, int mutation_limit){
         int ai_choice = 0;
         if (restrat) {
-            ai_choice = predictor.generate_ai_choice();
+            ai_choice = predictor.generate_ai_choice(initial_pop_size, mutation_limit);
         }
         else {
             ai_choice = possible_choices[random.nextInt(possible_choices.length)];
@@ -78,21 +78,21 @@ public class base {
         introduction();
         int player_choice = get_input();
         int initial_pop_size = get_initial_pop_size();
-        get_mutation_limit();
+        int mutation_limit = get_mutation_limit();
         while(turnnumber < 10){
-            turn(player_choice, false, initial_pop_size);
+            turn(player_choice, false, initial_pop_size, mutation_limit);
             turnnumber++;
         }
         while(turnnumber > 10) {
             if (turnnumber == 10) {
-                turn(player_choice, true, initial_pop_size);
+                turn(player_choice, true, initial_pop_size, mutation_limit);
             }
             else {
                 if (accumulated_ai_losses >= 3) {
-                    turn(player_choice, true, initial_pop_size);
+                    turn(player_choice, true, initial_pop_size, mutation_limit);
                 }
                 else {
-                    turn(player_choice, false, initial_pop_size);
+                    turn(player_choice, false, initial_pop_size, mutation_limit);
                 }
             }
             turnnumber++;

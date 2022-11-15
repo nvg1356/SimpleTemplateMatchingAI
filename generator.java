@@ -3,24 +3,21 @@ import java.util.*;
 import java.security.SecureRandom;
 
 public class generator {
-    ArrayList<Integer> hits = new ArrayList<Integer>();
     // template3 refers to a collection of all pattern templates available at the current turnnumber
     // template3[k] refers to the group of pattern templates with a pattern length of k + 2
-    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<ArrayList<ArrayList<Integer>>>();
+    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<>();
     // template2 refers to a group of pattern templates for a particular pattern length
-    ArrayList<ArrayList<Integer>> template2 = new ArrayList<ArrayList<Integer>>();
+    ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     // template1 refers to an ordinary pattern template
-    ArrayList<Integer> template1 = new ArrayList<Integer>();
+    ArrayList<Integer> template1 = new ArrayList<>();
     base object = new base();
-    int mutation_limit = object.mutation_limit;
     ArrayList<Integer> past_player_choices = object.past_player_choices;
-    int turnnumber = object.turnnumber;
-    ArrayList<Integer> pattern_lags = new ArrayList<Integer>();
-    ArrayList<Integer> best_template = new ArrayList<Integer>();
+    final int turnnumber = object.turnnumber;
+    ArrayList<Integer> best_template = new ArrayList<>();
     SecureRandom random = new SecureRandom();
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
-    public int max_seq_len(int turnnumber){ // Time Complexity: O(1)
+    public int max_seq_len(int turnnumber){
         int x = 11;
         for (int i = 2; i < 11; i++) {
             float quotient = turnnumber / i;
@@ -60,8 +57,8 @@ public class generator {
     }
 
     public ArrayList<ArrayList<Integer>> get_initial_population(int number_of_samples) {
-        ArrayList<ArrayList<Integer>> initial_population = new ArrayList<ArrayList<Integer>>();
-        ArrayList<Integer> samples_for_each_patt_length = new ArrayList<Integer>();
+        ArrayList<ArrayList<Integer>> initial_population = new ArrayList<>();
+        ArrayList<Integer> samples_for_each_patt_length = new ArrayList<>();
         for (int i = 0; i < template3.size(); i++) {
             float x = number_of_samples / template3.size();
             if ((i % 2) == 0) {
@@ -81,25 +78,42 @@ public class generator {
         return initial_population;
     }
 
-    public HashMap<Integer, Float> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
-        String past_player_choices_string = past_player_choices.toString();
-        String template_to_match_string = template_to_match.toString();
-        float number_of_hits = 0;
+    public HashMap<Integer, Double> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
+        double number_of_hits = 0;
         int last_known_idx = -2;
-        ArrayList<Integer> variance_list = new ArrayList<Integer>();
-        HashMap<Integer, Float> map = new HashMap<Integer, Float>();
-        for (int idx = 0; idx < past_player_choices_string.length(); idx++) {
-            boolean check = ((past_player_choices_string.indexOf(template_to_match_string, idx) >= last_known_idx) && (past_player_choices_string.indexOf(template_to_match_string, idx) != -1));
+        ArrayList<Integer> variance_list = new ArrayList<>();
+        HashMap<Integer, Double> map = new HashMap<>();
+        for (int idx = 0; idx < past_player_choices.size(); idx++) {
+            int occurrence = occurrence_of_segment(past_player_choices, template_to_match, idx);
+            boolean check = ((occurrence >= last_known_idx) && (occurrence != -1));
             if (check) {
-                last_known_idx = past_player_choices_string.indexOf(template_to_match_string, idx);
+                last_known_idx = occurrence;
                 number_of_hits++;
-                variance_list.add(past_player_choices_string.indexOf(template_to_match_string, idx) + template_to_match_string.length() - last_known_idx);
+                variance_list.add(occurrence + template_to_match.size() - last_known_idx);
             }
         }
-        float variance = get_array_variance(variance_list);
+        double variance = get_array_variance(variance_list);
         map.put(0, number_of_hits);
         map.put(1, variance);
         return map;
+    }
+
+    public int occurrence_of_segment (ArrayList<Integer> arraylist, ArrayList<Integer> segment, int start_idx) {
+        int hits = 0;
+        int occurrence = -1;
+        for (int i = start_idx; i < arraylist.size(); i++) {
+            if (arraylist.get(i).equals(segment.get(i - start_idx))) {
+                hits++;
+                if (hits == segment.size()) {
+                    occurrence = i - segment.size();
+                    break;
+                }
+            }
+            else {
+                hits = 0;
+            }
+        }
+        return occurrence;
     }
 
     public float get_array_variance(ArrayList<Integer> array) {
@@ -113,26 +127,25 @@ public class generator {
         return (dev_from_avg / (array.size() - 1));
     }
 
-    public void generate_best_template(int initial_pop_size) {
+    public void generate_best_template(int initial_pop_size, int mutation_limit) {
         generate_all_templates();
         ArrayList<ArrayList<Integer>> initial_population = get_initial_population(initial_pop_size);
         int current_mutation = 0;
-        sub_generation(initial_population, current_mutation);
+        sub_generation(initial_population, current_mutation, mutation_limit);
     }
 
-    public void sub_generation(ArrayList<ArrayList<Integer>> initial_population, int current_mutation) {
-
+    public void sub_generation(ArrayList<ArrayList<Integer>> initial_population, int current_mutation, int mutation_limit) {
         ArrayList<ArrayList<Integer>> templates_for_mutation = new ArrayList<>();
-        ArrayList<Float> ratings_array = new ArrayList<>();
+        ArrayList<Double> ratings_array = new ArrayList<>();
         for (ArrayList<Integer> template_to_match : initial_population){
-            float hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
-            float lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
-            float rating = hits + (1 / lag_variance);
+            double hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
+            double lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
+            double rating = hits + (1 / lag_variance);
             ratings_array.add(rating);
         }
         if (current_mutation == mutation_limit) {
-            float best_rating = 0;
-            for (float element: ratings_array) {
+            double best_rating = 0;
+            for (double element: ratings_array) {
                 if (best_rating < element) {
                     best_rating = element;
                 }
@@ -142,8 +155,8 @@ public class generator {
         else {
             //criteria to get top 20% of initial_population into templates_for_mutation
             for (int i = 0; i < Math.round(initial_population.size() * 0.4); i++) {
-                float max = ratings_array.get(0);
-                for (float element: ratings_array) {
+                double max = ratings_array.get(0);
+                for (double element: ratings_array) {
                     if (element > max) {
                         max = element;
                     }
@@ -152,11 +165,11 @@ public class generator {
                 initial_population.remove(ratings_array.indexOf(max));
                 ratings_array.remove(max);
             }
-            get_mutated_population(templates_for_mutation, current_mutation);
+            get_mutated_population(templates_for_mutation, current_mutation, mutation_limit);
         }
     }
 
-    public void get_mutated_population (ArrayList<ArrayList<Integer>> templates_for_mutation, int current_mutation) { //Reverse Sequence Mutation
+    public void get_mutated_population (ArrayList<ArrayList<Integer>> templates_for_mutation, int current_mutation, int mutation_limit) { //Reverse Sequence Mutation
         ArrayList<ArrayList<Integer>> mutated_population = new ArrayList<>();
         for (ArrayList<Integer> template: templates_for_mutation) {
             mutated_population.add(template);
@@ -168,18 +181,21 @@ public class generator {
             mutated_population.add(mutant);
         }
         current_mutation++;
-        sub_generation(mutated_population, current_mutation);
+        sub_generation(mutated_population, current_mutation, mutation_limit);
     }
 
-    public int generate_ai_choice() { //needs cleaning
-        String pattern = best_template.toString();
-        String last_few_choices = (past_player_choices.toString()).substring(past_player_choices.toString().length() - pattern.length());
+    public int generate_ai_choice(int initial_pop_size, int mutation_limit) { //needs cleaning
+        generate_best_template(initial_pop_size, mutation_limit);
+        ArrayList<Integer> last_few_choices = new ArrayList<>();
+        last_few_choices.addAll(past_player_choices.subList(past_player_choices.size() - best_template.size(),
+                past_player_choices.size()));
         int choice = 0;
         // if player is currently engaged in a pattern, assume that player will continue with the pattern this turn
         for (int k = 2; k < best_template.size(); k++) {
-            String temp = last_few_choices.substring(last_few_choices.length() - k);
-            if ((pattern.indexOf(temp)) == 0) {
-                choice = best_template.get(temp.length());
+            ArrayList<Integer> temp = new ArrayList<>();
+            temp.addAll(last_few_choices.subList(last_few_choices.size() - k, last_few_choices.size()));
+            if (occurrence_of_segment(best_template, temp, 0) == 0) {
+                choice = best_template.get(temp.size());
             }
         }
         //if player is not currently engaged in a pattern, assume that the pattern begins this turn.
