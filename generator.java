@@ -2,33 +2,31 @@ package twochoicegame;
 import java.util.*;
 
 public class generator {
-    ArrayList<Integer> hits = new ArrayList<Integer>();
     // template3 refers to a collection of all pattern templates available at the current turnnumber
     // template3[k] refers to the group of pattern templates with a pattern length of k + 2
-    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<ArrayList<ArrayList<Integer>>>();
+    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<>();
     // template2 refers to a group of pattern templates for a particular pattern length
-    ArrayList<ArrayList<Integer>> template2 = new ArrayList<ArrayList<Integer>>();
+    ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     // template1 refers to an ordinary pattern template
-    ArrayList<Integer> template1 = new ArrayList<Integer>();
+    ArrayList<Integer> template1 = new ArrayList<>();
     base object = new base();
     ArrayList<Integer> past_player_choices = object.past_player_choices;
-    int turnnumber = object.turnnumber;
-    ArrayList<Integer> pattern_lags = new ArrayList<Integer>();
+    final int turnnumber = object.turnnumber;
 
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
-    public int max_seq_len(int turnnumber){
+    public int max_seq_len(int turnnumber){ // Time Complexity: O(1)
         int x = 11;
         for (int i = 2; i < 11; i++) {
-            float quotient = turnnumber / i;
+            double quotient = (double) turnnumber / i;
             if (quotient < 3) {
                 x = i;
             }
-            }
+        }
         return x;
         }
 
-    public void generate_templates() {
+    public void generate_templates() { // Time Complexity: O()
         for (int j = 2; j <= max_seq_len(turnnumber); j++){
             template1.clear();
             int templen = 1;
@@ -56,61 +54,65 @@ public class generator {
             }
         }
 
-    public int get_hits(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
-        String past_player_choices_string = past_player_choices.toString();
-        String template_to_match_string = template_to_match.toString();
-        int number_of_hits = 0, last_known_idx = -2;
-        for (int idx = 0; idx < past_player_choices_string.length(); idx++) {
-            if ((last_known_idx != past_player_choices_string.indexOf(template_to_match_string, idx)) && (last_known_idx != -1)) {
-                number_of_hits++;
-                last_known_idx = past_player_choices_string.indexOf(template_to_match_string, idx);
+    public int occurrence_of_segment (ArrayList<Integer> arraylist, ArrayList<Integer> segment, int start_idx) {
+        int hits = 0;
+        int occurrence = -1;
+        for (int i = start_idx; i < arraylist.size(); i++) {
+            if (arraylist.get(i).equals(segment.get(i - start_idx))) {
+                hits++;
+                if (hits == segment.size()) {
+                    occurrence = i - segment.size();
+                    break;
+                }
+            }
+            else {
+                hits = 0;
             }
         }
-        return number_of_hits;
+        return occurrence;
     }
 
-    public HashMap<Integer, Float> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
-        String past_player_choices_string = past_player_choices.toString();
-        String template_to_match_string = template_to_match.toString();
-        float number_of_hits = 0;
+    public HashMap<Integer, Double> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
+        double number_of_hits = 0;
         int last_known_idx = -2;
-        ArrayList<Integer> variance_list = new ArrayList<Integer>();
-        HashMap<Integer, Float> map = new HashMap<Integer, Float>();
-        for (int idx = 0; idx < past_player_choices_string.length(); idx++) {
-            boolean check = ((past_player_choices_string.indexOf(template_to_match_string, idx) >= last_known_idx) && (past_player_choices_string.indexOf(template_to_match_string, idx) != -1));
+        ArrayList<Integer> variance_list = new ArrayList<>();
+        HashMap<Integer, Double> map = new HashMap<>();
+        for (int idx = 0; idx < past_player_choices.size(); idx++) {
+            int occurrence = occurrence_of_segment(past_player_choices, template_to_match, idx);
+            boolean check = ((occurrence >= last_known_idx) && (occurrence != -1));
             if (check) {
-                last_known_idx = past_player_choices_string.indexOf(template_to_match_string, idx);
+                last_known_idx = occurrence;
                 number_of_hits++;
-                variance_list.add(past_player_choices_string.indexOf(template_to_match_string, idx) + template_to_match_string.length() - last_known_idx);
+                variance_list.add(occurrence + template_to_match.size() - last_known_idx);
             }
         }
-        float variance = get_array_variance(variance_list);
+        double variance = get_array_variance(variance_list);
         map.put(0, number_of_hits);
         map.put(1, variance);
         return map;
     }
 
-    public float get_array_variance(ArrayList<Integer> array) {
-        float dev_from_avg = 0, sum_of_elements = 0, mean = (sum_of_elements) / array.size();
-        for (int i = 0; i < array.size(); i++) {
-            sum_of_elements += array.get(i);
+    public double get_array_variance(ArrayList<Integer> array) {
+        double dev_from_avg = 0, sum_of_elements = 0, mean = (sum_of_elements) / array.size();
+        for (Integer integer : array) {
+            sum_of_elements += integer;
         }
-        for (int i = 0; i < array.size(); i++) {
-            dev_from_avg += Math.pow((array.get(i) - mean), 2);
+        for (Integer integer : array) {
+            dev_from_avg += Math.pow((integer - mean), 2);
         }
         return (dev_from_avg / (array.size() - 1));
     }
 
     public ArrayList<Integer> generate_best_template(ArrayList<Integer> past_player_choices) {
         generate_templates();
-        float best_rating = 0 + (1 / Integer.MAX_VALUE);
-        ArrayList<Integer> best_template = new ArrayList<Integer>();
+        double best_rating = 0;
+        ArrayList<Integer> best_template = new ArrayList<>();
         for (int b = 0; b < template3.size(); b++){
             for (int c = 0; c < (template3.get(b)).size(); c++){
                 ArrayList<Integer> template_to_match = template3.get(b).get(c);
-                float hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
-                float lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
-                float rating = hits + (1 / lag_variance);
+                double hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
+                double lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
+                double rating = hits + (1 / lag_variance);
                 if (best_rating < rating) {
                     best_rating = rating;
                     best_template = template_to_match;
@@ -120,23 +122,23 @@ public class generator {
         return best_template;
     }
 
-    // Possible improvements to generate_best_template(): use variance of lags between pattern occurrences as criteria
-
     public int generate_ai_choice() {
-        String pattern = generate_best_template(past_player_choices).toString();
-        String last_few_choices = (past_player_choices.toString()).substring(((past_player_choices.toString()).length() - pattern.length()),
-                ((past_player_choices.toString()).length()));
+        ArrayList<Integer> pattern = generate_best_template(past_player_choices);
+        ArrayList<Integer> last_few_choices = new ArrayList<>();
+        last_few_choices.addAll(past_player_choices.subList(past_player_choices.size() - pattern.size(),
+                past_player_choices.size()));
         int choice = 0;
         // if player is currently engaged in a pattern, assume that player will continue with the pattern this turn
-        for (int k = 2; k < pattern.length(); k++) {
-            String temp = last_few_choices.substring(last_few_choices.length() - k, last_few_choices.length());
-            if ((pattern.indexOf(temp)) == 0) {
-                choice = generate_best_template(past_player_choices).get(temp.length());
+        for (int k = 2; k < pattern.size(); k++) {
+            ArrayList<Integer> temp = new ArrayList<>();
+            temp.addAll(last_few_choices.subList(last_few_choices.size() - k, last_few_choices.size()));
+            if (occurrence_of_segment(pattern, temp, 0) == 0) {
+                choice = pattern.get(temp.size());
             }
         }
         //if player is not currently engaged in a pattern, assume that the pattern begins this turn.
         if (choice == 0) {
-            choice = generate_best_template(past_player_choices).get(0);
+            choice = pattern.get(0);
         }
         return choice;
     }
