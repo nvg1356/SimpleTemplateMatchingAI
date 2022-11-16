@@ -117,16 +117,16 @@ public class generator {
         t4.start();
         while (template2.size() > 0) {
             if (t1.getState() == TERMINATED) {
-                t1.run();
+                t1.run(template_ratings_collection);
             }
             if (t2.getState() == TERMINATED) {
-                t2.run();
+                t2.run(template_ratings_collection);
             }
             if (t3.getState() == TERMINATED) {
-                t3.run();
+                t3.run(template_ratings_collection);
             }
             if (t4.getState() == TERMINATED) {
-                t4.run();
+                t4.run(template_ratings_collection);
             }
         }
         ArrayList<Double> ratings_array = new ArrayList<>();
