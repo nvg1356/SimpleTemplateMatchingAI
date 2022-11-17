@@ -1,7 +1,14 @@
-package dtwvariant;
-import java.util.*;
+package threadeddtwvariant;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Objects;
+
+import static java.lang.Thread.State.TERMINATED;
 
 public class generator {
+    HashMap<Double, ArrayList<Integer>> ratings_templates = new HashMap<>();
     ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     ArrayList<Integer> template1 = new ArrayList<>();
     base object = new base();
@@ -56,49 +63,52 @@ public class generator {
     }
     public ArrayList<Integer> generate_top_template() {
         generate_templates();
-        HashMap<Double, ArrayList<Integer>> ratings_templates = new HashMap<>();
+        MultiThreading t1 = new MultiThreading();
+        MultiThreading t2 = new MultiThreading();
+        MultiThreading t3 = new MultiThreading();
+        MultiThreading t4 = new MultiThreading();
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
         for (ArrayList<Integer> template_to_match: template2) {
-            if (object.past_player_choices.size() > template_to_match.size()) {
-                ArrayList<ArrayList<Integer>> sub_samples = new ArrayList<>();
-                for (int i = 0; i < Integer.MAX_VALUE; i++) {
-                    try {
-                        sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), (i + 1) * template_to_match.size()));
-                    } catch (IndexOutOfBoundsException e){
-                        sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), object.past_player_choices.size()));
-                        break;
-                    }
-                }
-                HashMap<Double, ArrayList<Integer>> sub_ratings_templates = new HashMap<>();
-                for (ArrayList<Integer> sub_sample : sub_samples) {
-                    double distance_counter = 0;
-                    ArrayList<Integer> warped_string = new ArrayList<>();
-                    int[] current_position = {0, 0};
-                    update_t_d_d(current_position, warped_string, distance_counter, template_to_match, sub_sample, sub_ratings_templates, true);
-                    double unsuitability = 0;
-                    for (Double sub_unsuitability: sub_ratings_templates.keySet()) {
-                        unsuitability += sub_unsuitability;
-                    }
-                    ratings_templates.put(unsuitability, template_to_match);
-                    sub_ratings_templates.clear();
-                }
-            }
-            else {
-                double distance_counter = 0;
-                ArrayList<Integer> warped_string = new ArrayList<>();
-                int[] current_position = {0, 0};
-                update_t_d_d(current_position, warped_string, distance_counter, template_to_match, object.past_player_choices, ratings_templates, false);
-            }
+            template_operations(template_to_match, ratings_templates);
         }
         double lowest_rating = Collections.min(ratings_templates.keySet());
         return ratings_templates.get(lowest_rating);
     }
 
-    public double get_array_sum(ArrayList<Double> some_array) {
-        double sum = 0;
-        for (double element : some_array) {
-            sum += element;
+    public void template_operations(ArrayList<Integer> template_to_match, HashMap<Double, ArrayList<Integer>> ratings_templates) {
+        if (object.past_player_choices.size() > template_to_match.size()) {
+            ArrayList<ArrayList<Integer>> sub_samples = new ArrayList<>();
+            for (int i = 0; i < Integer.MAX_VALUE; i++) {
+                try {
+                    sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), (i + 1) * template_to_match.size()));
+                } catch (IndexOutOfBoundsException e){
+                    sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), object.past_player_choices.size()));
+                    break;
+                }
+            }
+            HashMap<Double, ArrayList<Integer>> sub_ratings_templates = new HashMap<>();
+            for (ArrayList<Integer> sub_sample : sub_samples) {
+                double distance_counter = 0;
+                ArrayList<Integer> warped_string = new ArrayList<>();
+                int[] current_position = {0, 0};
+                update_t_d_d(current_position, warped_string, distance_counter, template_to_match, sub_sample, sub_ratings_templates, true);
+                double unsuitability = 0;
+                for (Double sub_unsuitability: sub_ratings_templates.keySet()) {
+                    unsuitability += sub_unsuitability;
+                }
+                ratings_templates.put(unsuitability, template_to_match);
+                sub_ratings_templates.clear();
+            }
         }
-        return sum;
+        else {
+            double distance_counter = 0;
+            ArrayList<Integer> warped_string = new ArrayList<>();
+            int[] current_position = {0, 0};
+            update_t_d_d(current_position, warped_string, distance_counter, template_to_match, object.past_player_choices, ratings_templates, false);
+        }
     }
 
     public ArrayList<Integer> subArrayList(ArrayList<Integer> original, int start_idx, int end_idx) {
