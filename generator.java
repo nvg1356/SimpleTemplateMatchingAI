@@ -5,20 +5,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
 
-import static java.lang.Thread.State.TERMINATED;
+import static threadeddtwvariant.base.past_player_choices;
+import static threadeddtwvariant.base.turnnumber;
 
 public class generator {
-    HashMap<Double, ArrayList<Integer>> ratings_templates = new HashMap<>();
-    ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
+    static HashMap<Double, ArrayList<Integer>> ratings_templates = new HashMap<>();
+    static ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     ArrayList<Integer> template1 = new ArrayList<>();
-    base object = new base();
 
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
     public int max_seq_len(){
         int x = 11;
         for (int i = 2; i < 11; i++) {
-            float quotient = object.turnnumber / i;
+            float quotient = turnnumber / i;
             if (quotient < 3) {
                 x = i;
             }
@@ -63,29 +63,20 @@ public class generator {
     }
     public ArrayList<Integer> generate_top_template() {
         generate_templates();
-        MultiThreading t1 = new MultiThreading();
-        MultiThreading t2 = new MultiThreading();
-        MultiThreading t3 = new MultiThreading();
-        MultiThreading t4 = new MultiThreading();
-        t1.start();
-        t2.start();
-        t3.start();
-        t4.start();
-        for (ArrayList<Integer> template_to_match: template2) {
-            template_operations(template_to_match, ratings_templates);
-        }
+        MultiThreading multithreading = new MultiThreading();
+        multithreading.run();
         double lowest_rating = Collections.min(ratings_templates.keySet());
         return ratings_templates.get(lowest_rating);
     }
 
     public void template_operations(ArrayList<Integer> template_to_match, HashMap<Double, ArrayList<Integer>> ratings_templates) {
-        if (object.past_player_choices.size() > template_to_match.size()) {
+        if (past_player_choices.size() > template_to_match.size()) {
             ArrayList<ArrayList<Integer>> sub_samples = new ArrayList<>();
             for (int i = 0; i < Integer.MAX_VALUE; i++) {
                 try {
-                    sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), (i + 1) * template_to_match.size()));
+                    sub_samples.add(subArrayList(past_player_choices, i * template_to_match.size(), (i + 1) * template_to_match.size()));
                 } catch (IndexOutOfBoundsException e){
-                    sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), object.past_player_choices.size()));
+                    sub_samples.add(subArrayList(past_player_choices, i * template_to_match.size(), past_player_choices.size()));
                     break;
                 }
             }
@@ -107,7 +98,7 @@ public class generator {
             double distance_counter = 0;
             ArrayList<Integer> warped_string = new ArrayList<>();
             int[] current_position = {0, 0};
-            update_t_d_d(current_position, warped_string, distance_counter, template_to_match, object.past_player_choices, ratings_templates, false);
+            update_t_d_d(current_position, warped_string, distance_counter, template_to_match, past_player_choices, ratings_templates, false);
         }
     }
 
@@ -123,7 +114,7 @@ public class generator {
         if ((current_position[0] == sample.size()) && (current_position[1] == template.size())) {
             double unsuitability;
             if (special) {
-                double number_of_segments = Math.round(0.5 + (object.past_player_choices.size() / template.size()));
+                double number_of_segments = Math.round(0.5 + (past_player_choices.size() / template.size()));
                 unsuitability = distance_counter + (get_dissimilarity(warped_string, sample) / number_of_segments);
             }
             else {
@@ -203,7 +194,7 @@ public class generator {
 
     public int generate_ai_choice() {
         ArrayList<Integer> pattern = generate_top_template();
-        ArrayList<Integer> last_few_choices = subArrayList(object.past_player_choices, object.past_player_choices.size() - pattern.size(), object.past_player_choices.size());
+        ArrayList<Integer> last_few_choices = subArrayList(past_player_choices, past_player_choices.size() - pattern.size(), past_player_choices.size());
         int choice = 0;
         // if player is currently engaged in a pattern, assume that player will continue with the pattern this turn
         for (int k = 2; k < pattern.size(); k++) {

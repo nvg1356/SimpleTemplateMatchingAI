@@ -1,16 +1,18 @@
-package twochoicegame;
+package threadeddtwvariant;
+
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class base {
     final int[] possible_choices = {1, 0};
-    ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
+    static ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
     int player_wins = 0;
     int ai_wins = 0;
     generator predictor = new generator();
-    int turnnumber = 0;
+    static int turnnumber = 0;
     int accumulated_ai_losses = 0;
-    SecureRandom random = new SecureRandom();
+    static SecureRandom random = new SecureRandom();
 
     static void introduction(){
         System.out.println("This game involves the player keying in a boolean input of either 1 or 0" +
@@ -36,7 +38,7 @@ public class base {
             default:
                 System.out.println("Your choice is invalid.");
                 get_input();
-        return player_choice;
+                return player_choice;
         }
     }
 
