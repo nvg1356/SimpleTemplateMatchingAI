@@ -22,7 +22,7 @@ resulting in a high computational cost.
 
 
 ## Other Branches  
-Versions with different AI algorithms have also been created.
+Versions with different AI algorithms have also been created.  
 **dtwvariant**: dynamic time warping algorithm with multithreading  
 **geneticreg**: template matching algorithm with multithreading and an evolutionary algorithm for sample size reduction  
 **geneticdtw**: dynamic time warping algorithm with multithreading and an evolutionary algorithm for sample size reduction  
