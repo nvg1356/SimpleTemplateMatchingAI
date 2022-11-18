@@ -1,5 +1,5 @@
 # SimpleTemplateMatchingAI
-Simple 2-by-2 matrix game without perfect information involving a dynamic time warping string-matching algorithm along with a metaheuristic evolutionary algorithm. 
+Simple 2-by-2 matrix game without perfect information involving a dynamic time warping string-matching algorithm along with a metaheuristic evolutionary algorithm. **IMPLEMENTED MULTITHREADING**
 
 ## Details
 ### Instructions
