@@ -1,20 +1,20 @@
-package geneticdtw;
-
-import geneticdtw.generator;
+package threadedgeneticdtw;
 
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class base {
     final int[] possible_choices = {1, 0};
-    ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
+    ArrayList<Integer> past_player_choices = new ArrayList<>();
     int player_wins = 0;
     int ai_wins = 0;
-    geneticdtw.generator predictor = new generator();
-    int turnnumber = 0;
+    generator predictor = new generator();
+    static int turnnumber = 0;
     int accumulated_ai_losses = 0;
-    int mutation_limit = 0;
-    SecureRandom random = new SecureRandom();
+    static int mutation_limit = 0;
+    static int initial_pop_size = 0;
+    static SecureRandom random = new SecureRandom();
     Scanner myObj = new Scanner(System.in);
 
     static void introduction(){
@@ -44,15 +44,14 @@ public class base {
         }
     }
 
-    public int get_initial_pop_size() {
+    public void get_initial_pop_size() {
         System.out.println("Please enter the desired initial population size (integers only) for the EA.");
-        int initial_pop_size = myObj.nextInt();
-        return initial_pop_size;
+        initial_pop_size = myObj.nextInt();
     }
 
     public void get_mutation_limit() {
         System.out.println("Please enter the desired number of rounds of mutation (integers only) for the EA.");
-        int mutation_limit = myObj.nextInt();
+        mutation_limit = myObj.nextInt();
     }
 
     // turn 1 is used for first ten turns
@@ -80,7 +79,7 @@ public class base {
     public void main(String[] args){
         introduction();
         int player_choice = get_input();
-        int initial_pop_size = get_initial_pop_size();
+        get_initial_pop_size();
         get_mutation_limit();
         while(turnnumber < 10){
             turn(player_choice, false, initial_pop_size);

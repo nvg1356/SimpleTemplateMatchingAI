@@ -1,29 +1,34 @@
-package geneticdtw;
+package threadedgeneticdtw;
 
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Objects;
+
+import static threadedgeneticdtw.base.initial_pop_size;
+import static threadedgeneticdtw.base.turnnumber;
 
 public class generator {
     // template3 refers to a collection of all pattern templates available at the current turn_number
     // template3[k] refers to the group of pattern templates with a pattern length of k + 2
-    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<ArrayList<ArrayList<Integer>>>();
+    ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<>();
     // template2 refers to a group of pattern templates for a particular pattern length
-    ArrayList<ArrayList<Integer>> template2 = new ArrayList<ArrayList<Integer>>();
+    ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     // template1 refers to an ordinary pattern template
-    ArrayList<Integer> template1 = new ArrayList<Integer>();
-    geneticdtw.base object = new base();
-    ArrayList<Integer> past_player_choices = object.past_player_choices;
-    final int turn_number = object.turnnumber;
-    final int mutation_limit = object.mutation_limit;
-    ArrayList<Integer> best_template = new ArrayList<Integer>();
+    ArrayList<Integer> template1 = new ArrayList<>();
+    base object = new base();
+    ArrayList<Integer> best_template = new ArrayList<>();
     SecureRandom random = new SecureRandom();
+    static ArrayList<ArrayList<Integer>> current_population = new ArrayList<>();
+    static HashMap<Double, ArrayList<Integer>> ratings_templates = new HashMap<>();
 
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
-    public int max_seq_len(int turn_number){ // Time Complexity: O(1)
+    public int max_seq_len(){ // Time Complexity: O(1)
         int x = 11;
         for (int i = 2; i < 11; i++) {
-            float quotient = turn_number / i;
+            float quotient = turnnumber / i;
             if (quotient < 3) {
                 x = i;
             }
@@ -32,7 +37,7 @@ public class generator {
     }
 
     public void generate_templates() { // Time Complexity: O()
-        for (int j = 2; j <= max_seq_len(turn_number); j++){
+        for (int j = 2; j <= max_seq_len(); j++){
             template1.clear();
             int templen = 1;
             subiteration(j, templen);
@@ -59,7 +64,7 @@ public class generator {
         }
     }
 
-    public ArrayList<ArrayList<Integer>> get_initial_population(int number_of_samples) {
+    public void get_initial_population(int number_of_samples) {
         ArrayList<ArrayList<Integer>> initial_population = new ArrayList<ArrayList<Integer>>();
         ArrayList<Integer> samples_for_each_patt_length = new ArrayList<Integer>();
         for (int i = 0; i < template3.size(); i++) {
@@ -78,88 +83,45 @@ public class generator {
                 initial_population.add(template3.get(i).get(random.nextInt(0, template3.get(i).size())));
             }
         }
-        return initial_population;
+        current_population = initial_population;
     }
 
-    public float get_dissimilarity(String warped_string, String actual_string) {
+    public double get_dissimilarity(ArrayList<Integer> warped_string, ArrayList<Integer> actual_string) {
         int differences = 0;
-        for (int i = 0; i <= actual_string.length(); i++) {
-            if (warped_string.charAt(i) == actual_string.charAt(i)) {
+        for (int i = 0; i <= actual_string.size(); i++) {
+            if (warped_string.get(i) == actual_string.get(i)) {
                 differences++;
             }
         }
-        float dissimilarity = differences / actual_string.length();
-        return dissimilarity;
+        return differences / actual_string.size();
     }
 
-    public void generate_best_template(int initial_pop_size) {
+    public void generate_best_template() {
         generate_templates();
-        ArrayList<ArrayList<Integer>> initial_population = get_initial_population(initial_pop_size);
+        get_initial_population(initial_pop_size);
         int current_mutation = 0;
-        sub_generation(initial_population, current_mutation);
+        sub_generation(current_population, current_mutation);
     }
 
     public void sub_generation(ArrayList<ArrayList<Integer>> initial_population, int current_mutation) {
         ArrayList<ArrayList<Integer>> templates_for_mutation = new ArrayList<>();
-        ArrayList<Float> ratings_array = new ArrayList<>();
-        ArrayList<Float> dissimilarities = new ArrayList<>();
-        ArrayList<Float> distances = new ArrayList<>();
+        MultiThreading multithreading = new MultiThreading();
+        multithreading.run();
         for (ArrayList<Integer> template_to_match : initial_population){
-            String template_to_match_string = template_to_match.toString();
-            String sample = past_player_choices.toString();
-            if (sample.length() > template_to_match_string.length()) {
-                ArrayList<String> sub_samples = new ArrayList<String>();
-                for (int i = 0; i < Integer.MAX_VALUE; i++) {
-                    try {
-                        sub_samples.add(sample.substring(i * template_to_match_string.length(), (i + 1) * template_to_match_string.length()));
-                    } catch (Exception StringIndexOutOfBounds){
-                        sub_samples.add(sample.substring(i * template_to_match_string.length()));
-                        break;
-                    }
-                }
-                ArrayList<Float> sub_dissimilarities = new ArrayList<>();
-                ArrayList<Float> sub_distances = new ArrayList<>();
-                for (int i = 0; i < sub_samples.size(); i++) {
-                    float distance_counter = 0;
-                    String warped_string = "";
-                    int[] current_position = {0, 0};
-                    update_t_d_d(current_position, warped_string, distance_counter, template_to_match_string, sub_samples.get(i), sub_dissimilarities, sub_distances);
-                }
-                dissimilarities.add(get_array_sum(sub_dissimilarities) / sub_dissimilarities.size());
-                distances.add(get_array_sum(sub_distances));
-            }
-            else {
-                float distance_counter = 0;
-                String warped_string = "";
-                int[] current_position = {0, 0};
-                update_t_d_d(current_position, warped_string, distance_counter, template_to_match_string, sample, dissimilarities, distances);
-            }
+            template_operations(template_to_match, ratings_templates);
         }
-        for (int i =0; i < distances.size(); i++) {
-            ratings_array.add(1 / (dissimilarities.get(i) + distances.get(i)));
-        }
-        if (current_mutation == mutation_limit) {
-            float best_rating = 0;
-            for (float element: ratings_array) {
-                if (best_rating < element) {
-                    best_rating = element;
-                }
-            }
-            best_template = initial_population.get(ratings_array.indexOf(best_rating));
+        if (current_mutation == object.mutation_limit) {
+            double lowest_rating = Collections.min(ratings_templates.keySet());
+            best_template = ratings_templates.get(lowest_rating);
         }
         else {
             //criteria to get top 20% of initial_population into templates_for_mutation
             for (int i = 0; i < Math.round(initial_population.size() * 0.4); i++) {
-                float max = ratings_array.get(0);
-                for (float element: ratings_array) {
-                    if (element > max) {
-                        max = element;
-                    }
-                }
-                templates_for_mutation.add(initial_population.get(ratings_array.indexOf(max)));
-                initial_population.remove(ratings_array.indexOf(max));
-                ratings_array.remove(max);
+                double lowest_rating = Collections.min(ratings_templates.keySet());
+                templates_for_mutation.add(ratings_templates.get(lowest_rating));
+                ratings_templates.remove(lowest_rating);
             }
+            ratings_templates.clear();
             get_mutated_population(templates_for_mutation, current_mutation);
         }
     }
@@ -176,88 +138,147 @@ public class generator {
             mutated_population.add(mutant);
         }
         current_mutation++;
-        sub_generation(mutated_population, current_mutation);
+        current_population = mutated_population;
+        sub_generation(current_population, current_mutation);
     }
 
-    public float get_array_sum(ArrayList<Float> some_array) {
-        float sum = 0;
-        for (int i = 0; i < some_array.size(); i++) {
-            sum += some_array.get(i);
-        }
-        return sum;
-    }
-
-    public void update_t_d_d(int[] current_position, String warped_string, float distance_counter, String template, String sample, ArrayList<Float> dissimilarities, ArrayList<Float> distances) {
-        if ((current_position[0] == sample.length()) && (current_position[1] == template.length())) {
-            dissimilarities.add(get_dissimilarity(warped_string, sample));
-            distances.add(distance_counter);
+    public void template_operations(ArrayList<Integer> template_to_match, HashMap<Double, ArrayList<Integer>> ratings_templates) {
+        if (object.past_player_choices.size() > template_to_match.size()) {
+            ArrayList<ArrayList<Integer>> sub_samples = new ArrayList<>();
+            for (int i = 0; i < Integer.MAX_VALUE; i++) {
+                try {
+                    sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), (i + 1) * template_to_match.size()));
+                } catch (IndexOutOfBoundsException e){
+                    sub_samples.add(subArrayList(object.past_player_choices, i * template_to_match.size(), object.past_player_choices.size()));
+                    break;
+                }
+            }
+            HashMap<Double, ArrayList<Integer>> sub_ratings_templates = new HashMap<>();
+            for (ArrayList<Integer> sub_sample : sub_samples) {
+                double distance_counter = 0;
+                ArrayList<Integer> warped_string = new ArrayList<>();
+                int[] current_position = {0, 0};
+                update_t_d_d(current_position, warped_string, distance_counter, template_to_match, sub_sample, sub_ratings_templates, true);
+                double unsuitability = 0;
+                for (Double sub_unsuitability: sub_ratings_templates.keySet()) {
+                    unsuitability += sub_unsuitability;
+                }
+                ratings_templates.put(unsuitability, template_to_match);
+                sub_ratings_templates.clear();
+            }
         }
         else {
-            if (current_position[0] == sample.length() - 1) {
-                distance_counter += template.length() - 1 - current_position[1];
-                current_position[1] = template.length() - 1;
-                update_t_d_d(current_position, warped_string, distance_counter, template, sample, dissimilarities, distances);
+            double distance_counter = 0;
+            ArrayList<Integer> warped_string = new ArrayList<>();
+            int[] current_position = {0, 0};
+            update_t_d_d(current_position, warped_string, distance_counter, template_to_match, object.past_player_choices, ratings_templates, false);
+        }
+    }
+
+    public void update_t_d_d(int[] current_position, ArrayList<Integer> warped_string, double distance_counter, ArrayList<Integer> template, ArrayList<Integer> sample, HashMap<Double, ArrayList<Integer>> ratings_templates, boolean special) {
+        if ((current_position[0] == sample.size()) && (current_position[1] == template.size())) {
+            double unsuitability;
+            if (special) {
+                double number_of_segments = Math.round(0.5 + (object.past_player_choices.size() / template.size()));
+                unsuitability = distance_counter + (get_dissimilarity(warped_string, sample) / number_of_segments);
             }
-            if (current_position[1] == template.length() - 1) {
-                distance_counter += sample.length() - 1 - current_position[0];
-                for (int i = current_position[0] + 1; i <= sample.length() - 1; i++) {
-                    warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1])));
+            else {
+                unsuitability = distance_counter + get_dissimilarity(warped_string, sample);
+            } ratings_templates.put(unsuitability, template);
+        }
+        else {
+            if (current_position[0] == sample.size() - 1) {
+                distance_counter += template.size() - 1 - current_position[1];
+                current_position[1] = template.size() - 1;
+                update_t_d_d(current_position, warped_string, distance_counter, template, sample, ratings_templates, special);
+            }
+            if (current_position[1] == template.size() - 1) {
+                distance_counter += sample.size() - 1 - current_position[0];
+                for (int i = current_position[0] + 1; i <= sample.size() - 1; i++) {
+                    warped_string.add(template.get(current_position[1]));
                 }
-                current_position[0] = sample.length() - 1;
-                update_t_d_d(current_position, warped_string, distance_counter, template, sample, dissimilarities, distances);
+                current_position[0] = sample.size() - 1;
+                update_t_d_d(current_position, warped_string, distance_counter, template, sample, ratings_templates, special);
             }
             else {
                 int potential_paths = 0;
-                for (int i = current_position[0]; i <= sample.length() - 1; i++) {
-                    if (sample.charAt(i) == template.charAt(current_position[1] + 1)) {
+                for (int i = current_position[0]; i <= sample.size() - 1; i++) {
+                    if (Objects.equals(sample.get(i), template.get(current_position[1] + 1))) {
                         if (i == current_position[0]) {
                             try {
-                                warped_string = warped_string.substring(0, warped_string.length() - 2) + String.format("%x", template.charAt(current_position[1] + 1));
+                                subArrayList(warped_string, 0, warped_string.size() - 2).add(template.get(current_position[1] + 1));
                                 distance_counter++;
                             } catch (Exception StringIndexOutOfBounds) {
-                                warped_string = String.format("%x", template.charAt(current_position[1] + 1));
+                                warped_string.clear();
+                                warped_string.add(template.get(current_position[1] + 1));
                                 distance_counter++;
                             }
                         }
                         else {
                             for (int a = current_position[0] + 1; a < i; a++) {
-                                warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1])));
+                                warped_string.add(template.get(current_position[1]));
                                 distance_counter++;
                             }
-                            warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1] + 1)));
+                            warped_string.add(template.get(current_position[1] + 1));
                             distance_counter += Math.sqrt(2);
                         }
                         current_position[0] = i;
                         current_position[1]++;
                         potential_paths++;
-                        update_t_d_d(current_position, warped_string, distance_counter, template, sample, dissimilarities, distances);
+                        update_t_d_d(current_position, warped_string, distance_counter, template, sample, ratings_templates, special);
                     }
                 }
                 if (potential_paths == 0) {
                     distance_counter += Math.sqrt(2);
-                    warped_string = warped_string.concat(String.format("%x", template.charAt(current_position[1] + 1)));
+                    warped_string.add(template.get(current_position[1] + 1));
                     current_position[0]++;
                     current_position[1]++;
-                    update_t_d_d(current_position, warped_string, distance_counter, template, sample, dissimilarities, distances);
+                    update_t_d_d(current_position, warped_string, distance_counter, template, sample, ratings_templates, special);
                 }
             }
         }
     }
 
+    public ArrayList<Integer> subArrayList(ArrayList<Integer> original, int start_idx, int end_idx) {
+        ArrayList<Integer> modified_array = new ArrayList<>();
+        for (int i = start_idx; i < end_idx; i++) {
+            modified_array.add(original.get(i));
+        }
+        return modified_array;
+    }
+
+    public int occurrence_of_segment (ArrayList<Integer> arraylist, ArrayList<Integer> segment, int start_idx) {
+        int hits = 0;
+        int occurrence = -1;
+        for (int i = start_idx; i < arraylist.size(); i++) {
+            if (arraylist.get(i).equals(segment.get(i - start_idx))) {
+                hits++;
+                if (hits == segment.size()) {
+                    occurrence = i - segment.size();
+                    break;
+                }
+            }
+            else {
+                hits = 0;
+            }
+        }
+        return occurrence;
+    }
+
     public int generate_ai_choice() {
-        String pattern = best_template.toString();
-        String last_few_choices = (past_player_choices.toString()).substring((past_player_choices.toString()).length() - pattern.length());
+        generate_best_template();
+        ArrayList<Integer> last_few_choices = subArrayList(object.past_player_choices, object.past_player_choices.size() - best_template.size(), object.past_player_choices.size());
         int choice = 0;
         // if player is currently engaged in a pattern, assume that player will continue with the pattern this turn
-        for (int k = 2; k < pattern.length(); k++) {
-            String temp = last_few_choices.substring(last_few_choices.length() - k);
-            if ((pattern.indexOf(temp)) == 0) {
-                choice = pattern.charAt(temp.length());
+        for (int k = 2; k < best_template.size(); k++) {
+            ArrayList<Integer> temp = subArrayList(last_few_choices, last_few_choices.size() - k, last_few_choices.size());
+            if (occurrence_of_segment(best_template, temp, 0) == 0) {
+                choice = best_template.get(temp.size());
             }
         }
         //if player is not currently engaged in a pattern, assume that the pattern begins this turn.
         if (choice == 0) {
-            choice = pattern.charAt(0);
+            choice = best_template.get(0);
         }
         return choice;
     }
