@@ -1,5 +1,5 @@
 # SimpleTemplateMatchingAI
-Simple 2-by-2 matrix game without perfect information involving a dyanmic time warping algorithm. **IMPLEMENTED MULTITHREADING**
+Simple 2-by-2 matrix game without perfect information involving a dyanmic time warping algorithm. 
 
 ## Details
 ### Instructions
@@ -9,7 +9,7 @@ from the computer's move, the player wins the turn.
 ### How the algorithm works
 Before the algorithm starts, it knows about the moves of the player in turns which have past. 
 1. Based on the number of turns already past, the algorithm generates a list of every possible pattern that the player can use. 
-2. For every possible pattern, a dissimilarity metric which corresponds to the suitability of the pattern is calculated. 
+2. For every possible pattern, a dissimilarity metric which corresponds to the suitability of the pattern is calculated. (This step is computationally expensive so multithreading was implemented to reduce time spent.)
 3. The pattern with the lowest metric value is utilised to base predictions of the player's move
 4. If the current turn is in the middle of an iteration of the pattern, the player's move is predicted to be the next uniterated element of the pattern. Otherwise, assume that the pattern will begin next turn. 
 ### Reason for algorithm choice
