@@ -1,5 +1,5 @@
 # SimpleTemplateMatchingAI
-Simple 2-by-2 matrix game without perfect information involving a dynamic time warping string-matching algorithm along with a metaheuristic evolutionary algorithm. **IMPLEMENTED MULTITHREADING**
+Simple 2-by-2 matrix game without perfect information involving a dynamic time warping string-matching algorithm along with a metaheuristic evolutionary algorithm. 
 
 ## Details
 ### Instructions
@@ -9,10 +9,11 @@ from the computer's move, the player wins the turn.
 ### How the algorithms works
 Before the algorithm starts, it knows about the moves of the player in turns which have past. 
 1. Based on the number of turns already past, the algorithm generates a small number of patterns that the player could have used. 
-2. For each pattern, a dissimilarity metric which corresponds to the suitability of the pattern is calculated. 
+2. For each pattern, a dissimilarity metric which corresponds to the suitability of the pattern is calculated. (This step is computationally expensive so multithreading was implemented to reduce time spent.)
 3. The most suitable patterns in the initial population are utilised to generate more patterns which could be more fitting.
-4. After a certain number of generations, the most suitable pattern, among all which have been generated, will be utilised to base predictions of the player's moves.
-4. If the current turn is in the middle of an iteration of the pattern, the player's move is predicted to be the next uniterated element of the pattern. Otherwise, assume that the pattern will begin next turn. 
+4. Repeat step 2 and 3 for a certain number of times.
+5. The most suitable pattern, among all which have been generated, will be utilised to base predictions of the player's moves.
+6. If the current turn is in the middle of an iteration of the pattern, the player's move is predicted to be the next uniterated element of the pattern. Otherwise, assume that the pattern will begin next turn. 
 ### Reason for usage of template-matching algorithm
 In the cognitive sciences, template matching is a eminent theory that describes how one identify patterns. The theory is as follows: when one
 looks at a sequence, the sequence is compared against every pattern that one can think of. A better explanation can be found [here](https://cdn.intechopen.com/pdfs/5795/InTech-Theory_of_cognitive_pattern_recognition.pdf). Furthermore, template matching is used in other machine 
