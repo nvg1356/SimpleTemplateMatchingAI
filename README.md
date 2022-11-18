@@ -1,5 +1,5 @@
 # SimpleTemplateMatchingAI
-Simple 2-by-2 matrix game without perfect information involving a template-matching algorithm. **IMPLEMENTED MULTI-THREADING**
+Simple 2-by-2 matrix game without perfect information involving a template-matching algorithm.
 
 ## Details
 ### Instructions
@@ -9,7 +9,7 @@ from the computer's move, the player wins the turn.
 ### How the algorithm works
 The computer decides its moves via a template matching algorithm. Before the algorithm starts, it knows about the moves of the player in turns which have past. 
 1. Based on the number of turns already past, the algorithm generates a list of every possible pattern that the player can use. 
-2. For every possible pattern, a metric **f(number of occurences of pattern in past player moves, variance of length of gaps in between its occurrences)** which corresponds to the suitability of the pattern is calculated. 
+2. For every possible pattern, a metric **f(number of occurences of pattern in past player moves, variance of length of gaps in between its occurrences)** which corresponds to the suitability of the pattern is calculated. (This step is computationally expensive so multithreading was implemented to reduce time spent.)
 3. The pattern with the highest metric value is utilised to base predictions of the player's move
 4. If the current turn is in the middle of an iteration of the pattern, the player's move is predicted to be the next uniterated element of the pattern. Otherwise, assume that the pattern will begin next turn. 
 ### Reason for algorithm choice
@@ -21,6 +21,8 @@ Success of the algorithm hinges on there being patterns to the player's moves. T
 resulting in a high computational cost. 
 
 
-## Potential Updates
-In the future, I may decide to implement a more advanced algorithm. One that I currently have in mind is dynamic time warping. Details of this
-algorithm can be found in a paper called "Using Dynamic Time Warping to Find Patterns in Time Series" by Donald J. Berndt and James Clifford. **CAN BE FOUND IN dtwvariant branch**
+## Other Branches  
+Versions with different AI algorithms have also been created.
+**dtwvariant**: dynamic time warping algorithm with multithreading  
+**geneticreg**: template matching algorithm with multithreading and an evolutionary algorithm for sample size reduction  
+**geneticdtw**: dynamic time warping algorithm with multithreading and an evolutionary algorithm for sample size reduction  
