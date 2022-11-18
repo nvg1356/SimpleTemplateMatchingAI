@@ -1,26 +1,28 @@
-package geneticreg;
-import java.util.*;
+package threadedgeneticreg;
+
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+
+import static threadedgeneticreg.base.*;
 
 public class generator {
-    // template3 refers to a collection of all pattern templates available at the current turnnumber
-    // template3[k] refers to the group of pattern templates with a pattern length of k + 2
     ArrayList<ArrayList<ArrayList<Integer>>> template3 = new ArrayList<>();
-    // template2 refers to a group of pattern templates for a particular pattern length
     ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     // template1 refers to an ordinary pattern template
     ArrayList<Integer> template1 = new ArrayList<>();
-    base object = new base();
-    ArrayList<Integer> past_player_choices = object.past_player_choices;
-    final int turnnumber = object.turnnumber;
     ArrayList<Integer> best_template = new ArrayList<>();
     SecureRandom random = new SecureRandom();
+    static ArrayList<ArrayList<Integer>> current_population = new ArrayList<>();
+    static HashMap<Double, ArrayList<Integer>> ratings_templates = new HashMap<>();
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
-    public int max_seq_len(int turnnumber){
+    public int max_seq_len(){
         int x = 11;
         for (int i = 2; i < 11; i++) {
-            float quotient = turnnumber / i;
+            float quotient = base.turnnumber / i;
             if (quotient < 3) {
                 x = i;
             }
@@ -29,7 +31,7 @@ public class generator {
     }
 
     public void generate_all_templates() { // Time Complexity: O()
-        for (int j = 2; j <= max_seq_len(turnnumber); j++) {
+        for (int j = 2; j <= max_seq_len(); j++) {
             template1.clear();
             int templen = 1;
             subiteration(j, templen);
@@ -56,11 +58,10 @@ public class generator {
         }
     }
 
-    public ArrayList<ArrayList<Integer>> get_initial_population(int number_of_samples) {
-        ArrayList<ArrayList<Integer>> initial_population = new ArrayList<>();
+    public void get_initial_population() {
         ArrayList<Integer> samples_for_each_patt_length = new ArrayList<>();
         for (int i = 0; i < template3.size(); i++) {
-            float x = number_of_samples / template3.size();
+            float x = initial_pop_size / template3.size();
             if ((i % 2) == 0) {
                x += 0.5 ;
             }
@@ -72,10 +73,9 @@ public class generator {
                 samples_for_each_patt_length.set(i , template3.get(i).size());
             }
             for (int k = 0; k < samples_for_each_patt_length.get(i); k++) {
-                initial_population.add(template3.get(i).get(random.nextInt(0, template3.get(i).size())));
+                current_population.add(template3.get(i).get(random.nextInt(0, template3.get(i).size())));
             }
         }
-        return initial_population;
     }
 
     public HashMap<Integer, Double> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
@@ -127,65 +127,56 @@ public class generator {
         return (dev_from_avg / (array.size() - 1));
     }
 
-    public void generate_best_template(int initial_pop_size, int mutation_limit) {
+    public void generate_best_template() {
         generate_all_templates();
-        ArrayList<ArrayList<Integer>> initial_population = get_initial_population(initial_pop_size);
+        get_initial_population();
         int current_mutation = 0;
-        sub_generation(initial_population, current_mutation, mutation_limit);
+        sub_generation(current_mutation);
     }
 
-    public void sub_generation(ArrayList<ArrayList<Integer>> initial_population, int current_mutation, int mutation_limit) {
+    public void sub_generation(int current_mutation) {
         ArrayList<ArrayList<Integer>> templates_for_mutation = new ArrayList<>();
-        ArrayList<Double> ratings_array = new ArrayList<>();
-        for (ArrayList<Integer> template_to_match : initial_population){
-            double hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
-            double lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
-            double rating = hits + (1 / lag_variance);
-            ratings_array.add(rating);
-        }
+
         if (current_mutation == mutation_limit) {
-            double best_rating = 0;
-            for (double element: ratings_array) {
-                if (best_rating < element) {
-                    best_rating = element;
-                }
-            }
-            best_template = initial_population.get(ratings_array.indexOf(best_rating));
+            double best_rating = Collections.max(ratings_templates.keySet());
+            best_template = ratings_templates.get(best_rating);
         }
         else {
             //criteria to get top 20% of initial_population into templates_for_mutation
-            for (int i = 0; i < Math.round(initial_population.size() * 0.4); i++) {
-                double max = ratings_array.get(0);
-                for (double element: ratings_array) {
-                    if (element > max) {
-                        max = element;
-                    }
-                }
-                templates_for_mutation.add(initial_population.get(ratings_array.indexOf(max)));
-                initial_population.remove(ratings_array.indexOf(max));
-                ratings_array.remove(max);
+            for (int i = 0; i < Math.round(current_population.size() * 0.4); i++) {
+                double max = Collections.max(ratings_templates.keySet());
+                templates_for_mutation.add(ratings_templates.get(max));
+                ratings_templates.remove(max);
             }
-            get_mutated_population(templates_for_mutation, current_mutation, mutation_limit);
+            ratings_templates.clear();
+            current_population.clear();
+            get_mutated_population(templates_for_mutation, current_mutation);
         }
     }
 
-    public void get_mutated_population (ArrayList<ArrayList<Integer>> templates_for_mutation, int current_mutation, int mutation_limit) { //Reverse Sequence Mutation
-        ArrayList<ArrayList<Integer>> mutated_population = new ArrayList<>();
+    public void template_operations(ArrayList<Integer> template_to_match) {
+        double hits = get_hits_and_variance(past_player_choices, template_to_match).get(0);
+        double lag_variance = get_hits_and_variance(past_player_choices, template_to_match).get(1);
+        double rating = hits + (1 / lag_variance);
+        ratings_templates.put(rating, template_to_match);
+    }
+
+    public void get_mutated_population (ArrayList<ArrayList<Integer>> templates_for_mutation, int current_mutation) { //Reverse Sequence Mutation
         for (ArrayList<Integer> template: templates_for_mutation) {
-            mutated_population.add(template);
+            current_population.add(template);
             ArrayList<Integer> mutant = template;
             int inv_start = random.nextInt(1, (int) Math.round(mutant.size() * 0.5 - 0.5));
             for (int i = inv_start; i < (mutant.size() - inv_start); i++) {
                 mutant.set(i, mutant.get(mutant.size() - inv_start - i));
             }
-            mutated_population.add(mutant);
+            current_population.add(mutant);
         }
         current_mutation++;
-        sub_generation(mutated_population, current_mutation, mutation_limit);
+        sub_generation(current_mutation);
     }
 
-    public int generate_ai_choice(int initial_pop_size, int mutation_limit) { //needs cleaning
-        generate_best_template(initial_pop_size, mutation_limit);
+    public int generate_ai_choice() {
+        generate_best_template();
         ArrayList<Integer> last_few_choices = new ArrayList<>();
         last_few_choices.addAll(past_player_choices.subList(past_player_choices.size() - best_template.size(),
                 past_player_choices.size()));

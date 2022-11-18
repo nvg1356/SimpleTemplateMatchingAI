@@ -1,16 +1,20 @@
-package geneticreg;
+package threadedgeneticreg;
+
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class base {
     final int[] possible_choices = {1, 0};
-    ArrayList<Integer> past_player_choices = new ArrayList<>();
+    static ArrayList<Integer> past_player_choices = new ArrayList<>();
     int player_wins = 0;
     int ai_wins = 0;
     generator predictor = new generator();
-    int turnnumber = 0;
+    static int turnnumber = 0;
+    static int mutation_limit;
+    static int initial_pop_size;
     int accumulated_ai_losses = 0;
-    SecureRandom random = new SecureRandom();
+    static SecureRandom random = new SecureRandom();
     Scanner myObj = new Scanner(System.in);
 
     static void introduction(){
@@ -40,23 +44,21 @@ public class base {
         }
     }
 
-    public int get_initial_pop_size() {
+    public void get_initial_pop_size() {
         System.out.println("Please enter the desired initial population size (integers only) for the EA.");
-        int initial_pop_size = myObj.nextInt();
-        return initial_pop_size;
+        initial_pop_size = myObj.nextInt();
     }
 
-    public int get_mutation_limit() {
+    public void get_mutation_limit() {
         System.out.println("Please enter the desired number of rounds of mutation (integers only) for the EA.");
-        int mutation_limit = myObj.nextInt();
-        return mutation_limit;
+        mutation_limit = myObj.nextInt();
     }
 
     // turn 1 is used for first ten turns
-    public void turn(int player_choice, boolean restrat, int initial_pop_size, int mutation_limit){
+    public void turn(int player_choice, boolean restrat){
         int ai_choice = 0;
         if (restrat) {
-            ai_choice = predictor.generate_ai_choice(initial_pop_size, mutation_limit);
+            ai_choice = predictor.generate_ai_choice();
         }
         else {
             ai_choice = possible_choices[random.nextInt(possible_choices.length)];
@@ -76,23 +78,23 @@ public class base {
 
     public void main(String[] args){
         introduction();
+        get_initial_pop_size();
+        get_mutation_limit();
         int player_choice = get_input();
-        int initial_pop_size = get_initial_pop_size();
-        int mutation_limit = get_mutation_limit();
         while(turnnumber < 10){
-            turn(player_choice, false, initial_pop_size, mutation_limit);
+            turn(player_choice, false);
             turnnumber++;
         }
         while(turnnumber > 10) {
             if (turnnumber == 10) {
-                turn(player_choice, true, initial_pop_size, mutation_limit);
+                turn(player_choice, true);
             }
             else {
                 if (accumulated_ai_losses >= 3) {
-                    turn(player_choice, true, initial_pop_size, mutation_limit);
+                    turn(player_choice, true);
                 }
                 else {
-                    turn(player_choice, false, initial_pop_size, mutation_limit);
+                    turn(player_choice, false);
                 }
             }
             turnnumber++;
