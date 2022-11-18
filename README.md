@@ -1,5 +1,5 @@
 # SimpleTemplateMatchingAI
-Simple 2-by-2 matrix game without perfect information involving a dyanmic time warping algorithm. 
+Simple 2-by-2 matrix game without perfect information involving a dynamic time warping algorithm. 
 
 ## Details
 ### Instructions
