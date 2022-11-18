@@ -1,18 +1,30 @@
 package threadedregvariant;
 
 import java.util.*;
-import java.security.SecureRandom;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class MultiThreading extends Thread{
-    generator generate = new generator();
-    SecureRandom random = new SecureRandom();
+import static threadedregvariant.base.random;
 
-    public void run(HashMap<Double, ArrayList<Integer>> template_rating_collection) {
+public class MultiThreading {
+    public static synchronized ArrayList<Integer> updating_process() {
         ArrayList<Integer> template_to_match = generator.template2.get(random.nextInt(generator.template2.size()));
         generator.template2.remove(template_to_match);
-        double hits = generate.get_hits_and_variance(generate.past_player_choices, template_to_match).get(0);
-        double lag_variance = generate.get_hits_and_variance(generate.past_player_choices, template_to_match).get(1);
-        double rating = hits + (1 / lag_variance);
-        template_rating_collection.put(rating, template_to_match);
+        return template_to_match;
+    }
+
+    public void run() {
+        ExecutorService executorservice = Executors.newFixedThreadPool(4);
+        for (int i = 0; i < 4; i++) {
+            executorservice.execute(new threadfunction());
+        }
+        executorservice.shutdown();
+        while (!executorservice.isTerminated()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                return;
+            }
+        }
     }
 }

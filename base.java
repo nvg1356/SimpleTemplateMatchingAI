@@ -6,13 +6,13 @@ import java.util.Scanner;
 
 public class base {
     final int[] possible_choices = {1, 0};
-    public ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
+    static ArrayList<Integer> past_player_choices = new ArrayList<Integer>();
     int player_wins = 0;
     int ai_wins = 0;
     generator predictor = new generator();
-    public int turnnumber = 0;
+    static int turnnumber = 0;
     int accumulated_ai_losses = 0;
-    SecureRandom random = new SecureRandom();
+    static SecureRandom random = new SecureRandom();
 
     static void introduction(){
         System.out.println("This game involves the player keying in a boolean input of either 1 or 0" +

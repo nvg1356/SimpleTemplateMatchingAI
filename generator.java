@@ -1,19 +1,19 @@
 package threadedregvariant;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static java.lang.Thread.State.TERMINATED;
+import static threadedregvariant.base.past_player_choices;
+import static threadedregvariant.base.turnnumber;
 
 public class generator {
     // template2 refers to all pattern templates
     static ArrayList<ArrayList<Integer>> template2 = new ArrayList<>();
     // template1 refers to an ordinary pattern template
     ArrayList<Integer> template1 = new ArrayList<>();
-    base object = new base();
-    public ArrayList<Integer> past_player_choices = object.past_player_choices;
-    final int turnnumber = object.turnnumber;
-
+    static HashMap<Double, ArrayList<Integer>> template_ratings_collection = new HashMap<>();
     //Assumptions are that patterns lasting more than ten moves are impossible,
 
     public int max_seq_len(int turnnumber){ // Time Complexity: O(1)
@@ -53,7 +53,7 @@ public class generator {
             }
         }
 
-    public int occurrence_of_segment (ArrayList<Integer> arraylist, ArrayList<Integer> segment, int start_idx) {
+    static int occurrence_of_segment (ArrayList<Integer> arraylist, ArrayList<Integer> segment, int start_idx) {
         int hits = 0;
         int occurrence = -1;
         for (int i = start_idx; i < arraylist.size(); i++) {
@@ -71,7 +71,7 @@ public class generator {
         return occurrence;
     }
 
-    public HashMap<Integer, Double> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
+    static HashMap<Integer, Double> get_hits_and_variance(ArrayList<Integer> past_player_choices, ArrayList<Integer> template_to_match) {
         double number_of_hits = 0;
         int last_known_idx = -2;
         ArrayList<Integer> variance_list = new ArrayList<>();
@@ -91,7 +91,7 @@ public class generator {
         return map;
     }
 
-    public double get_array_variance(ArrayList<Integer> array) {
+    static double get_array_variance(ArrayList<Integer> array) {
         double dev_from_avg = 0, sum_of_elements = 0, mean = (sum_of_elements) / array.size();
         for (Integer integer : array) {
             sum_of_elements += integer;
@@ -102,54 +102,22 @@ public class generator {
         return (dev_from_avg / (array.size() - 1));
     }
 
-    public ArrayList<Integer> generate_best_template(ArrayList<Integer> past_player_choices) {
+    public ArrayList<Integer> generate_best_template() {
         generate_templates();
-
-        HashMap<Double, ArrayList<Integer>> template_ratings_collection = new HashMap<>();
-        //4-threads
-        MultiThreading t1 = new MultiThreading();
-        MultiThreading t2 = new MultiThreading();
-        MultiThreading t3 = new MultiThreading();
-        MultiThreading t4 = new MultiThreading();
-        t1.start();
-        t2.start();
-        t3.start();
-        t4.start();
-        while (template2.size() > 0) {
-            if (t1.getState() == TERMINATED) {
-                t1.run(template_ratings_collection);
-            }
-            if (t2.getState() == TERMINATED) {
-                t2.run(template_ratings_collection);
-            }
-            if (t3.getState() == TERMINATED) {
-                t3.run(template_ratings_collection);
-            }
-            if (t4.getState() == TERMINATED) {
-                t4.run(template_ratings_collection);
-            }
-        }
-        ArrayList<Double> ratings_array = new ArrayList<>();
-        template_ratings_collection.keySet().forEach((n) -> ratings_array.add(n));
-        double best_rating = 0;
-        for (double rating: ratings_array) {
-            if (rating > best_rating) {
-                best_rating = rating;
-            }
-        }
+        MultiThreading multithreading = new MultiThreading();
+        multithreading.run();
+        double best_rating = Collections.max(template_ratings_collection.keySet());
         return template_ratings_collection.get(best_rating);
     }
 
     public int generate_ai_choice() {
-        ArrayList<Integer> pattern = generate_best_template(past_player_choices);
-        ArrayList<Integer> last_few_choices = new ArrayList<>();
-        last_few_choices.addAll(past_player_choices.subList(past_player_choices.size() - pattern.size(),
+        ArrayList<Integer> pattern = generate_best_template();
+        ArrayList<Integer> last_few_choices = new ArrayList<>(past_player_choices.subList(past_player_choices.size() - pattern.size(),
                 past_player_choices.size()));
         int choice = 0;
         // if player is currently engaged in a pattern, assume that player will continue with the pattern this turn
         for (int k = 2; k < pattern.size(); k++) {
-            ArrayList<Integer> temp = new ArrayList<>();
-            temp.addAll(last_few_choices.subList(last_few_choices.size() - k, last_few_choices.size()));
+            ArrayList<Integer> temp = new ArrayList<>(last_few_choices.subList(last_few_choices.size() - k, last_few_choices.size()));
             if (occurrence_of_segment(pattern, temp, 0) == 0) {
                 choice = pattern.get(temp.size());
             }
